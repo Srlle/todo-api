@@ -1,15 +1,18 @@
 const request = require('supertest');
 const expect = require('expect');
-
+const {ObjectID} = require('mongodb');
 const {app} = require('./../server');
 const {Todo} = require('./../models/todo');
 
+var myID = new ObjectID
+
 const todos  = [{
-  text: 'First test todo.'
+  _id: myID,
+  text: `First test todo.`
 }, {
+  _id: new ObjectID,
   text: 'Second test todo.'
 }];
-
 
 beforeEach((done) => {
   Todo.remove({}).then(() => {
@@ -72,6 +75,35 @@ describe('GET /todos', () => {
         expect(res.body.todos.length).toBe(2);
       })
       .end(done);
-
   })
 });
+
+describe('GET /todos:id', () => {
+  it('should return 404 when invalid object Id is passed', (done) => {
+
+    request(app)
+      .get('/todos/123')
+      .expect(404)
+      .end(done);
+  });
+
+  it('should return 404 when non-existant object Id is passed', (done) => {
+    var newId = new ObjectID().toHexString();
+    request(app)
+      .get(`/todos/${newId}`)
+      .expect(404)
+      .end(done)
+  });
+
+
+    it('should return object when correct object Id is passed', (done) => {
+
+      request(app)
+        .get(`/todos/${myID}`)
+        .expect(200)
+        .expect((res) => {
+          expect(res.body.todo.text).toBe(todos[0].text);
+        })
+        .end(done)
+    });
+})
